@@ -1,0 +1,468 @@
+openapi: 3.0.1
+info:
+  title: MicroERP - API de Faturamento
+  description: API para gerenciamento de faturas e clientes para pequenos prestadores de serviço.
+  version: 0.1.0
+  contact:
+    name: Seu Nome ou Empresa # Atualize com seus dados
+    email: seuemail@exemplo.com # Atualize com seus dados
+servers:
+  - url: http://localhost:8080/api/v1 # Exemplo de URL base, ajuste se necessário
+    description: Servidor de Desenvolvimento Local
+tags:
+  - name: Clientes
+    description: Operações relacionadas ao cadastro e consulta de clientes.
+  - name: Faturas
+    description: Operações relacionadas à criação e gestão de faturas.
+
+paths:
+  # --- Recursos de Clientes ---
+  /clientes:
+    get:
+      tags:
+        - Clientes
+      summary: Buscar todos os clientes
+      description: Retorna uma lista paginada de todos os clientes cadastrados.
+      operationId: listarClientes
+      parameters:
+        - name: page
+          in: query
+          description: Número da página (base 0)
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          description: Quantidade de clientes por página
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Lista de clientes obtida com sucesso.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cliente'
+        '500':
+          description: Erro interno no servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+    post:
+      tags:
+        - Clientes
+      summary: Criar cliente
+      description: Cadastra um novo cliente no sistema.
+      operationId: criarCliente
+      requestBody:
+        description: Dados do cliente a ser criado.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NovoCliente'
+      responses:
+        '201':
+          description: Cliente criado com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente' # Retorna o cliente criado com ID
+        '400':
+          description: Requisição inválida (ex: dados faltando ou formato incorreto).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '500':
+          description: Erro interno no servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+  /clientes/{clienteId}:
+    get:
+      tags:
+        - Clientes
+      summary: Buscar cliente por ID
+      description: Retorna os detalhes de um cliente específico pelo seu ID.
+      operationId: buscarClientePorId
+      parameters:
+        - name: clienteId
+          in: path
+          required: true
+          description: ID do cliente a ser buscado.
+          schema:
+            type: integer # Ajuste o tipo se usar UUID (string, format: uuid) ou outro
+            format: int64
+            example: 1
+      responses:
+        '200':
+          description: Cliente encontrado com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+        '404':
+          description: Cliente não encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '500':
+          description: Erro interno no servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+  # --- Recursos de Faturas ---
+  /faturas:
+    post:
+      tags:
+        - Faturas
+      summary: Criar fatura
+      description: Cria uma nova fatura associada a um cliente existente.
+      operationId: criarFatura
+      requestBody:
+        description: Dados da nova fatura.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NovaFatura'
+      responses:
+        '201':
+          description: Fatura criada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fatura' # Retorna a fatura criada com ID
+        '400':
+          description: Requisição inválida (ex: clienteId não existe, dados inválidos).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '500':
+          description: Erro interno no servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+    get: # Adicionado para "Buscar faturas por cliente" usando query param
+      tags:
+        - Faturas
+      summary: Buscar faturas (filtrado por cliente)
+      description: Retorna uma lista paginada de faturas, opcionalmente filtrada por ID do cliente.
+      operationId: listarFaturasPorCliente
+      parameters:
+        - name: clienteId
+          in: query
+          required: true # Tornando obrigatório para este endpoint específico
+          description: ID do cliente para o qual buscar as faturas.
+          schema:
+            type: integer
+            format: int64
+            example: 1
+        - name: page
+          in: query
+          description: Número da página (base 0)
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          description: Quantidade de faturas por página
+          required: false
+          schema:
+            type: integer
+            default: 20
+        # Pode adicionar outros filtros aqui (status, data, etc.)
+      responses:
+        '200':
+          description: Lista de faturas obtida com sucesso.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Fatura'
+        '400':
+          description: Requisição inválida (ex: clienteId não fornecido).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '404':
+          description: Cliente não encontrado (se o clienteId fornecido não existir).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '500':
+          description: Erro interno no servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+  /faturas/{faturaId}:
+    get:
+      tags:
+        - Faturas
+      summary: Buscar fatura por ID
+      description: Retorna os detalhes de uma fatura específica pelo seu ID.
+      operationId: buscarFaturaPorId
+      parameters:
+        - name: faturaId
+          in: path
+          required: true
+          description: ID da fatura a ser buscada.
+          schema:
+            type: integer # Ajuste o tipo se necessário
+            format: int64
+            example: 101
+      responses:
+        '200':
+          description: Fatura encontrada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fatura'
+        '404':
+          description: Fatura não encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '500':
+          description: Erro interno no servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+  /faturas/{faturaId}/pagar: # Usando PATCH para indicar a ação de pagamento
+    patch:
+      tags:
+        - Faturas
+      summary: Marcar fatura como paga
+      description: Atualiza o status de uma fatura específica para 'PAGA'.
+      operationId: marcarFaturaComoPaga
+      parameters:
+        - name: faturaId
+          in: path
+          required: true
+          description: ID da fatura a ser marcada como paga.
+          schema:
+            type: integer
+            format: int64
+            example: 101
+      responses:
+        '200':
+          description: Fatura marcada como paga com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fatura' # Retorna a fatura atualizada
+        '404':
+          description: Fatura não encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '409': # Conflict - Ex: Fatura já estava paga ou foi cancelada
+          description: Não foi possível marcar como paga (ex: status incompatível).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '500':
+          description: Erro interno no servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+components:
+  schemas:
+    # --- Schemas de Cliente ---
+    Cliente:
+      type: object
+      description: Representa um cliente cadastrado.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identificador único do cliente.
+          readOnly: true # ID é gerado pelo sistema
+        nome:
+          type: string
+          description: Nome ou Razão Social do cliente.
+          example: "ACME Corp"
+        email:
+          type: string
+          format: email
+          description: Endereço de e-mail principal.
+          example: "contato@acme.com"
+        telefone:
+          type: string
+          description: Número de telefone (opcional).
+          example: "(11) 5555-1234"
+        # Adicione outros campos relevantes: cpfCnpj, endereco, dataCadastro, etc.
+      required:
+        - id
+        - nome
+        - email
+
+    NovoCliente:
+      type: object
+      description: Dados para criação de um novo cliente.
+      properties:
+        nome:
+          type: string
+          description: Nome ou Razão Social do cliente.
+          example: "Nova Empresa Ltda"
+        email:
+          type: string
+          format: email
+          description: Endereço de e-mail principal.
+          example: "financeiro@novaempresa.com"
+        telefone:
+          type: string
+          description: Número de telefone (opcional).
+          example: "(21) 9999-8888"
+        # Adicione outros campos relevantes
+      required:
+        - nome
+        - email
+
+    # --- Schemas de Fatura ---
+    Fatura:
+      type: object
+      description: Representa uma fatura emitida para um cliente.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identificador único da fatura.
+          readOnly: true
+        clienteId:
+          type: integer
+          format: int64
+          description: ID do cliente associado.
+        descricao:
+          type: string
+          description: Descrição dos serviços ou produtos faturados.
+          example: "Serviços de Consultoria - Ref. Jun/2024"
+        valor:
+          type: number
+          format: double # Use 'decimal' se precisar de alta precisão
+          description: Valor total da fatura.
+          example: 2500.50
+        dataEmissao:
+          type: string
+          format: date # Formato YYYY-MM-DD
+          description: Data de emissão da fatura.
+          example: "2024-06-10"
+        dataVencimento:
+          type: string
+          format: date # Formato YYYY-MM-DD
+          description: Data limite para pagamento.
+          example: "2024-06-25"
+        status:
+          type: string
+          description: Situação atual da fatura.
+          enum: [PENDENTE, PAGA, VENCIDA, CANCELADA]
+          example: PENDENTE
+        # Adicione outros campos: dataPagamento, linkBoleto, etc.
+      required:
+        - id
+        - clienteId
+        - descricao
+        - valor
+        - dataEmissao
+        - dataVencimento
+        - status
+
+    NovaFatura:
+      type: object
+      description: Dados para criação de uma nova fatura.
+      properties:
+        clienteId:
+          type: integer
+          format: int64
+          description: ID do cliente para o qual a fatura será emitida.
+          example: 2
+        descricao:
+          type: string
+          description: Descrição dos serviços ou produtos faturados.
+          example: "Desenvolvimento de API - MVP"
+        valor:
+          type: number
+          format: double
+          description: Valor total da fatura.
+          example: 5000.00
+        dataVencimento:
+          type: string
+          format: date
+          description: Data limite para pagamento.
+          example: "2024-07-15"
+      required:
+        - clienteId
+        - descricao
+        - valor
+        - dataVencimento
+
+    # --- Schema de Erro Genérico ---
+    Erro:
+      type: object
+      description: Estrutura padrão para respostas de erro da API.
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Momento em que o erro ocorreu.
+        status:
+          type: integer
+          description: Código de status HTTP.
+          example: 404
+        error:
+          type: string
+          description: Descrição curta do status HTTP.
+          example: "Not Found"
+        message:
+          type: string
+          description: Mensagem detalhada sobre o erro.
+          example: "Cliente com ID 999 não encontrado."
+        path:
+          type: string
+          description: Caminho da requisição que causou o erro.
+          example: "/api/v1/clientes/999"
+      required:
+        - timestamp
+        - status
+        - error
+        - message
+        - path
+
+# --- Definições de Segurança (Placeholder para Autenticação Futura) ---
+# security:
+#   - bearerAuth: [] # Exemplo: Requer token Bearer JWT em todas as rotas
+
+# components:
+#   securitySchemes:
+#     bearerAuth:
+#       type: http
+#       scheme: bearer
+#       bearerFormat: JWT
+#       description: "Autenticação via Token JWT Bearer. Obtenha o token via endpoint /auth/login (a ser definido)."
