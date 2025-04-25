@@ -33,7 +33,6 @@ public class Client {
     private String email;
     private String phone;
 
-    // Address
     private String address;
     private String district;
     private String city;
@@ -41,7 +40,6 @@ public class Client {
     private String postalCode;
     private String country;
 
-    // Business info
     private String companyName;
     private String stateRegistration;
     private String municipalRegistration;

@@ -20,7 +20,7 @@ public class ClientServiceImpl implements ClientService {
     private final AtomicLong counter = new AtomicLong();
 
     public ClientServiceImpl() {
-        // Dados mockados com Builder
+
         ClientDTO mockClient = ClientDTO.builder()
                 .id(counter.incrementAndGet())
                 .fullName("John Doe")
